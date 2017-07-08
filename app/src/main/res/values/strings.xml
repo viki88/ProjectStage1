@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Project1</string>
+
+    <string name="detail_title">Movie Detail</string>
+
+    <string name="menu_popular_string">Popular</string>
+    <string name="menu_top_rated_string">Top Rated</string>
+</resources>
