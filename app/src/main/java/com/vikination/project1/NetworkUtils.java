@@ -18,7 +18,7 @@ class NetworkUtils {
     private static final String MOVIE_REVIEWS = "reviews";
 
     // TODO : Add your APIKEY here
-    private static final String API_KEY = "06d7f99d5aa3b1f85f3910c0b52b8e5f";
+    private static final String API_KEY = "";
     private static final String IMAGE_TYPE = "w342";
     public static final String MOVIE_DB_IMG_URL = "https://image.tmdb.org/t/p/"+IMAGE_TYPE+"/";
 
