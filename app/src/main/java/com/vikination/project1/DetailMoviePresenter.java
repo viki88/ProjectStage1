@@ -1,9 +1,5 @@
 package com.vikination.project1;
 
-import android.content.ContentUris;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -11,36 +7,35 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
-import com.vikination.project1.Models.PopularDataResponse;
+import com.vikination.project1.Models.ReviewsDataResponse;
+import com.vikination.project1.Models.TrailerDataResponse;
 import com.vikination.project1.Models.VolleySingleton;
-import com.vikination.project1.data.FavContract;
 
 import org.json.JSONObject;
 
 /**
- * Created by Viki Andrianto on 7/8/17.
+ * Created by Viki Andrianto on 8/8/17.
  */
 
-class MainPresenterImpl implements MainPresenter{
+public class DetailMoviePresenter {
+    DetailMovieView view;
 
-    private final MainActivityView view;
-
-    public MainPresenterImpl(MainActivityView view){
+    public DetailMoviePresenter(DetailMovieView view){
         this.view = view;
     }
 
-    public void loadMoviewPoster(){
+    public void loadMovieVideo(String movieId){
         if (NetworkUtils.isOnline(view.getContextView())){
-
+            view.loadStart();
             JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET
-                    , NetworkUtils.getUrlMoviePopular(), null, new Response.Listener<JSONObject>() {
+                    , NetworkUtils.getMovieVideo(movieId), null, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-//                    Log.i(Utils.TAG, "onResponse: "+response.toString());
                     view.loadStop();
-                    PopularDataResponse responseData = new Gson().fromJson(response.toString()
-                            , PopularDataResponse.class);
-                    view.showResponseMovies(responseData);
+                    TrailerDataResponse trailerDataResponse = new Gson().fromJson(response.toString()
+                            , TrailerDataResponse.class);
+                    view.trailerResult(trailerDataResponse.getResults());
+                    Log.i(Utils.TAG, "onResponse movie video: "+new Gson().toJson(trailerDataResponse));
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -57,18 +52,21 @@ class MainPresenterImpl implements MainPresenter{
         }
     }
 
-    public void loadTopMoviePoster(){
+    public void loadReviewsVideo(String movieId){
         if (NetworkUtils.isOnline(view.getContextView())){
-
+            view.loadStart();
             JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET
-                    , NetworkUtils.getUrlMovieTopRated(), null, new Response.Listener<JSONObject>() {
+                    , NetworkUtils.getReviewsMoview(movieId), null, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    Log.i(Utils.TAG, "onResponse: "+response.toString());
                     view.loadStop();
-                    PopularDataResponse responseData = new Gson().fromJson(response.toString()
-                            , PopularDataResponse.class);
-                    view.showResponseMovies(responseData);
+                    ReviewsDataResponse reviewsDataResponse = new Gson().fromJson(response.toString()
+                            ,ReviewsDataResponse.class);
+                    view.reviewsResult(reviewsDataResponse.getResults());
+//                    TrailerDataResponse trailerDataResponse = new Gson().fromJson(response.toString()
+//                            , TrailerDataResponse.class);
+//                    view.trailerResult(trailerDataResponse.getResults());
+                    Log.i(Utils.TAG, "onResponse review video: "+response.toString());
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -84,21 +82,4 @@ class MainPresenterImpl implements MainPresenter{
             view.showToast("Network is not available");
         }
     }
-
-    public void loadFavMoviePoster(){
-
-//        Cursor cursor = view.getContextView().getContentResolver().query(FavContract.FavEntry.CONTENT_URI
-//                ,null,null,null,FavContract.FavEntry._ID);
-//
-//        if (cursor != null){
-//            while (cursor.moveToNext()){
-//                String data = cursor.getString()
-//            }
-//        }else {
-//            view.showToast("cursor is empty");
-//        }
-
-
-    }
-
 }

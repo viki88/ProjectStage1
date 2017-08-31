@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="size_standard_16">16dp</dimen>
+    <dimen name="size_standard_8">8dp</dimen>
+    <dimen name="text_size_body">12sp</dimen>
+    <dimen name="title_size_movie">28sp</dimen>
+    <dimen name="size_height_movie_layout">100dp</dimen>
+    <dimen name="size_image_thumbnails">250dp</dimen>
+    <dimen name="title_size">18sp</dimen>
+</resources>

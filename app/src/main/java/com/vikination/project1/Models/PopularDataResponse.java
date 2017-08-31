@@ -45,6 +45,33 @@ public class PopularDataResponse {
         boolean adult;
         String overview;
         String release_date;
+        String offline_trailer;
+        String offline_review;
+        byte[] offline_image;
+
+        public byte[] getOffline_image() {
+            return offline_image;
+        }
+
+        public void setOffline_image(byte[] offline_image) {
+            this.offline_image = offline_image;
+        }
+
+        public String getOffline_trailer() {
+            return offline_trailer;
+        }
+
+        public void setOffline_trailer(String offline_trailer) {
+            this.offline_trailer = offline_trailer;
+        }
+
+        public String getOffline_review() {
+            return offline_review;
+        }
+
+        public void setOffline_review(String offline_review) {
+            this.offline_review = offline_review;
+        }
 
         public int getVote_count() {
             return vote_count;
@@ -96,6 +123,58 @@ public class PopularDataResponse {
 
         public String getRelease_date() {
             return release_date;
+        }
+
+        public void setVote_count(int vote_count) {
+            this.vote_count = vote_count;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public void setVideo(boolean video) {
+            this.video = video;
+        }
+
+        public void setVote_average(double vote_average) {
+            this.vote_average = vote_average;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public void setPopularity(double popularity) {
+            this.popularity = popularity;
+        }
+
+        public void setPoster_path(String poster_path) {
+            this.poster_path = poster_path;
+        }
+
+        public void setOriginal_language(String original_language) {
+            this.original_language = original_language;
+        }
+
+        public void setOriginal_title(String original_title) {
+            this.original_title = original_title;
+        }
+
+        public void setBackdrop_path(String backdrop_path) {
+            this.backdrop_path = backdrop_path;
+        }
+
+        public void setAdult(boolean adult) {
+            this.adult = adult;
+        }
+
+        public void setOverview(String overview) {
+            this.overview = overview;
+        }
+
+        public void setRelease_date(String release_date) {
+            this.release_date = release_date;
         }
     }
 }

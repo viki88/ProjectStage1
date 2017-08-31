@@ -2,7 +2,13 @@ package com.vikination.project1;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -17,10 +23,12 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.vikination.project1.Models.PopularDataResponse;
+import com.vikination.project1.data.FavContract;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements MainActivityView, OnThumbClickListener{
+public class MainActivity extends AppCompatActivity implements MainActivityView, OnThumbClickListener
+        ,LoaderManager.LoaderCallbacks<Cursor>{
 
     private MainPresenterImpl presenter;
     private RecyclerView recyclerView;
@@ -30,7 +38,11 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
     private static final int NUMBER_COLLUMN = 2;
     private static final String POP_MOVIE_TITLE = "Pop Movies";
     private static final String TOP_MOVIE_TITLE = "Top Movies";
+    private static final String FAV_MOVIE_TITLE = "Favourite Movies";
     private String tag = POP_MOVIE_TITLE;
+
+    public static final int FAV_LOADER_ID = 20;
+    private boolean favData = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +66,13 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
 
         presenter = new MainPresenterImpl(this);
         setTitle(POP_MOVIE_TITLE);
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        loadMovies();
     }
 
     @Override
@@ -73,6 +92,10 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
                 setTitle(TOP_MOVIE_TITLE);
                 loadMovies();
                 break;
+            case R.id.menu_fav:
+                setTitle(FAV_MOVIE_TITLE);
+                loadMovies();
+                break;
             default:
                 break;
         }
@@ -86,15 +109,22 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
 
     private void loadMovies(){
         if (tag.equals(POP_MOVIE_TITLE)){
+            favData = false;
             presenter.loadMoviewPoster();
-        }else {
+        }else if (tag.equals(TOP_MOVIE_TITLE)){
+            favData = false;
             presenter.loadTopMoviePoster();
+        }else {
+            favData = true;
+            getSupportLoaderManager().restartLoader(FAV_LOADER_ID, null, this);
+//            presenter.loadFavMoviePoster();
         }
     }
 
     private void showDetailMovie(PopularDataResponse.MovieData data){
         Intent intent = new Intent(this, DetailMovieActivity.class);
         intent.putExtra(DetailMovieActivity.MOVIE_DATA, data);
+        intent.putExtra(DetailMovieActivity.FAV_DETAIL_EXTRA, favData);
         startActivity(intent);
     }
 
@@ -127,6 +157,65 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
         showDetailMovie(movieData);
     }
 
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return new AsyncTaskLoader<Cursor>(this) {
+
+            Cursor favDataCursor;
+
+            @Override
+            protected void onStartLoading() {
+                super.onStartLoading();
+                if (favDataCursor != null){
+                    deliverResult(favDataCursor);
+                }else {
+                    forceLoad();
+                }
+            }
+
+            @Override
+            public Cursor loadInBackground() {
+                return getContextView().getContentResolver().query(FavContract.FavEntry.CONTENT_URI
+                ,null,null,null,FavContract.FavEntry._ID);
+            }
+
+            @Override
+            public void deliverResult(Cursor data) {
+                favDataCursor = data;
+                super.deliverResult(data);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        ArrayList<PopularDataResponse.MovieData> dataMovies = new ArrayList<>();
+        while (data.moveToNext()){
+//            String dataContent = data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_NAME_TITLE));
+            PopularDataResponse.MovieData movie = new PopularDataResponse.MovieData();
+            movie.setId(data.getInt(data.getColumnIndex(FavContract.FavEntry.COLLUMN_NAME_ID)));
+            movie.setTitle(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_NAME_TITLE)));
+            movie.setOffline_image(data.getBlob(data.getColumnIndex(FavContract.FavEntry.COLLUMN_IMAGE_BYTE)));
+            movie.setPoster_path(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_MOVIE_POSTER_IMAGE)));
+            movie.setRelease_date(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_RELEASE_DATE)));
+            movie.setVote_average(Double.parseDouble(
+                    data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_RATING))));
+            movie.setOverview(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_REVIEW)));
+            movie.setOffline_review(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_REVIEWS)));
+            movie.setOffline_trailer(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_TRAILERS)));
+//            movie.set(data.getString(data.getColumnIndex(FavContract.FavEntry.COLLUMN_MOVIE_POSTER_IMAGE)));
+            dataMovies.add(movie);
+        }
+        adapter.updateData(dataMovies);
+        loadStop();
+//        Log.i(Utils.TAG, "onLoadFinished: "+new Gson().toJson(dataMovies));
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
     public static class ThumbnailImageAdapter extends RecyclerView.Adapter<ThumbnailImageAdapter.ViewHolderImage>{
 
         ArrayList<PopularDataResponse.MovieData> data = new ArrayList();
@@ -147,7 +236,13 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
         @Override
         public void onBindViewHolder(final ViewHolderImage holder, int position) {
             final PopularDataResponse.MovieData dataMovie = data.get(position);
-            Picasso.with(context).load(NetworkUtils.MOVIE_DB_IMG_URL+dataMovie.getPoster_path()).into(holder.imageView);
+            if (NetworkUtils.isOnline(context))Picasso.with(context)
+                    .load(NetworkUtils.MOVIE_DB_IMG_URL+dataMovie.getPoster_path()).into(holder.imageView);
+            else {
+                Bitmap bitmap = BitmapFactory.decodeByteArray(
+                        dataMovie.getOffline_image(), 0, dataMovie.getOffline_image().length);
+                holder.imageView.setImageBitmap(bitmap);
+            }
             holder.imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

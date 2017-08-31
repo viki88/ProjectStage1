@@ -2,7 +2,24 @@
     <string name="app_name">Project1</string>
 
     <string name="detail_title">Movie Detail</string>
+    <string name="delete_fav">Unmark</string>
+    <string name="yes">Yes</string>
+    <string name="cancel">Cancel</string>
+    <string name="send_to">Share to</string>
 
     <string name="menu_popular_string">Popular</string>
     <string name="menu_top_rated_string">Top Rated</string>
+    <string name="menu_favourites_string">Favourites</string>
+
+    <string name="text_loading_text">Loading...</string>
+    <string name="text_label_trailers">Trailers :</string>
+    <string name="text_label_reviews">Reviews :</string>
+    <string name="text_unmark_fav">Are you sure unmark this movie from favourite?</string>
+
+    <string name="text_button_mark">mark as favourite</string>
+    <string name="text_button_unmark">unmark as favourite</string>
+    <string name="toast_add_fav_success">add to favourite success</string>
+    <string name="toast_delete_fav_success">delete from favourite success</string>
+    <string name="toast_add_fav_failed">add to favourite failed</string>
+    <string name="toast_delete_fav_failed">delete from favourite failed</string>
 </resources>
