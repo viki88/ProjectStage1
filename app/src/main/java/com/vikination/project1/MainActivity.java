@@ -6,13 +6,16 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,11 +24,15 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
 import com.squareup.picasso.Picasso;
 import com.vikination.project1.Models.PopularDataResponse;
 import com.vikination.project1.data.FavContract;
 
+import io.fabric.sdk.android.Fabric;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class MainActivity extends AppCompatActivity implements MainActivityView, OnThumbClickListener
         ,LoaderManager.LoaderCallbacks<Cursor>{
@@ -34,11 +41,13 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
     private RecyclerView recyclerView;
     private ThumbnailImageAdapter adapter;
     private SwipeRefreshLayout swipeLayout;
+    private static Parcelable stateSaved;
 
     private static final int NUMBER_COLLUMN = 2;
-    private static final String POP_MOVIE_TITLE = "Pop Movies";
-    private static final String TOP_MOVIE_TITLE = "Top Movies";
-    private static final String FAV_MOVIE_TITLE = "Favourite Movies";
+    public static final String POP_MOVIE_TITLE = "Pop Movies";
+    public static final String TOP_MOVIE_TITLE = "Top Movies";
+    public static final String FAV_MOVIE_TITLE = "Favourite Movies";
+    public static final String LAYOUT_MANAGER_STATE = "layout-manager-state";
     private String tag = POP_MOVIE_TITLE;
 
     public static final int FAV_LOADER_ID = 20;
@@ -47,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
 
         adapter = new ThumbnailImageAdapter(this, this);
@@ -63,16 +73,59 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
         GridLayoutManager sGridLayout = new GridLayoutManager(this, NUMBER_COLLUMN);
 //        sGridLayout.setAutoMeasureEnabled(true);
         recyclerView.setLayoutManager(sGridLayout);
+//        recyclerView.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable(LAYOUT_MANAGER_STATE));
 
         presenter = new MainPresenterImpl(this);
-        setTitle(POP_MOVIE_TITLE);
+        tag = PreferenceUtils.currentMovieLoad(this, POP_MOVIE_TITLE);
+        setTitle(tag);
 
     }
 
     @Override
     protected void onStart() {
+        if (stateSaved != null) recyclerView.getLayoutManager().onRestoreInstanceState(stateSaved);
         super.onStart();
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+//        super.onRestoreInstanceState(savedInstanceState);
+        Log.i(Utils.TAG, "onRestoreInstanceState: ");
+        stateSaved = savedInstanceState.getParcelable(LAYOUT_MANAGER_STATE);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable(LAYOUT_MANAGER_STATE, recyclerView.getLayoutManager().onSaveInstanceState());
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onPause() {
+        PreferenceUtils.saveCurrentMovieLoad(this, tag);
+        String position = String.valueOf(((LinearLayoutManager)recyclerView.getLayoutManager())
+                .findFirstCompletelyVisibleItemPosition());
+        Log.i(Utils.TAG, "onResume: "+position);
+//        PreferenceUtils.saveScrollPositionMain(this, position);
+//        Bundle bundle = new Bundle();
+//        bundle.putParcelable(LAYOUT_MANAGER_STATE, recyclerView.getLayoutManager().onSaveInstanceState());
+//        onSaveInstanceState(bundle);
+//
+//        stateSaved = recyclerView.getLayoutManager().onSaveInstanceState();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        tag = PreferenceUtils.currentMovieLoad(this, POP_MOVIE_TITLE);
+        setTitle(tag);
         loadMovies();
+        super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
     }
 
     @Override
@@ -144,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
     @Override
     public void showResponseMovies(PopularDataResponse dataResponse) {
         adapter.updateData(dataResponse.getResults());
+        recyclerView.getLayoutManager().onRestoreInstanceState(stateSaved);
     }
 
     @Override
@@ -239,9 +293,11 @@ public class MainActivity extends AppCompatActivity implements MainActivityView,
             if (NetworkUtils.isOnline(context))Picasso.with(context)
                     .load(NetworkUtils.MOVIE_DB_IMG_URL+dataMovie.getPoster_path()).into(holder.imageView);
             else {
-                Bitmap bitmap = BitmapFactory.decodeByteArray(
-                        dataMovie.getOffline_image(), 0, dataMovie.getOffline_image().length);
-                holder.imageView.setImageBitmap(bitmap);
+                if (dataMovie.getOffline_image() != null){
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(
+                            dataMovie.getOffline_image(), 0, dataMovie.getOffline_image().length);
+                    holder.imageView.setImageBitmap(bitmap);
+                }
             }
             holder.imageView.setOnClickListener(new View.OnClickListener() {
                 @Override

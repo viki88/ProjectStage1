@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,9 +44,11 @@ public class DetailMovieActivity extends AppCompatActivity implements DetailMovi
 
     public static final String MOVIE_DATA = "MOVIE_DATA";
     public static final String FAV_DETAIL_EXTRA = "fav-detail_extra";
+    public static final String SCROLL_POSITION = "scroll-position";
     private PopularDataResponse.MovieData movieData;
 
     private TextView titleView, ratingView, synopsisView, releaseDateView, favText;
+    private ScrollView scrollViewDetail;
     private ImageView posterView;
     private ProgressDialog progressDialog;
     private DetailMoviePresenter presenter;
@@ -77,6 +80,7 @@ public class DetailMovieActivity extends AppCompatActivity implements DetailMovi
         layoutLinearTrailer = (LinearLayout) findViewById(R.id.ll_trailer_list);
         liniearLayoutReview = (LinearLayout) findViewById(R.id.ll_reviews_list);
         favText = (TextView) findViewById(R.id.tv_mark);
+        scrollViewDetail = (ScrollView) findViewById(R.id.scrollViewDetail);
 
         if (isFavDetail) favText.setText(R.string.text_button_unmark);
         else favText.setText(R.string.text_button_mark);
@@ -93,6 +97,9 @@ public class DetailMovieActivity extends AppCompatActivity implements DetailMovi
         ratingView.setText(movieData.getVote_average()+"/10");
         synopsisView.setText(movieData.getOverview());
         releaseDateView.setText(movieData.getRelease_date());
+
+        getSupportActionBar().setTitle(R.string.detail_title);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         if (NetworkUtils.isOnline(this)){
             Picasso.with(this).load(NetworkUtils.MOVIE_DB_IMG_URL+movieData.getPoster_path()).into(new Target() {
@@ -115,18 +122,15 @@ public class DetailMovieActivity extends AppCompatActivity implements DetailMovi
 
                 }
             });
-        }else {
-            imagePosterBitmap = movieData.getOffline_image();
-            posterView.setImageBitmap(BitmapFactory.decodeByteArray(imagePosterBitmap, 0, imagePosterBitmap.length));
-        }
-
-        getSupportActionBar().setTitle(R.string.detail_title);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        if (NetworkUtils.isOnline(this)){
             presenter.loadMovieVideo(String.valueOf(movieData.getId()));
             presenter.loadReviewsVideo(String.valueOf(movieData.getId()));
         }else {
+            if (movieData.getOffline_image() != null){
+                imagePosterBitmap = movieData.getOffline_image();
+                posterView.setImageBitmap(BitmapFactory.decodeByteArray(imagePosterBitmap, 0, imagePosterBitmap.length));
+            }else {
+                showToast(getString(R.string.text_connection_failed));
+            }
             if (movieData.getOffline_trailer() != null) {
                 ArrayList<TrailerDataResponse.TrailerData> dataTrailers =
                         new Gson().fromJson(movieData.getOffline_trailer(),
@@ -137,7 +141,23 @@ public class DetailMovieActivity extends AppCompatActivity implements DetailMovi
                 trailerResult(dataTrailers);
                 reviewsResult(dataReviews);
             }
+        }
+    }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        Log.i(Utils.TAG, "onSaveInstanceState: "+scrollViewDetail.getScrollY());
+        outState.putIntArray(SCROLL_POSITION, new int[]{scrollViewDetail.getScrollX(),scrollViewDetail.getScrollY()});
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        final int[] postion = savedInstanceState.getIntArray(SCROLL_POSITION);
+        Log.i(Utils.TAG, "onRestoreInstanceState: "+postion[1]);
+        if (postion != null){
+            scrollViewDetail.scrollTo(postion[0],postion[1]);
         }
     }
 

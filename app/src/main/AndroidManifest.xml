@@ -23,6 +23,9 @@
             android:authorities="com.vikination.project1"
             android:name=".data.FavContentProvider"
             android:exported="false"/>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="2f1314fca775ab8cb94c678a623553afa1577f62" />
     </application>
 
 </manifest>
